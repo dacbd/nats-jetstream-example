@@ -1,0 +1,36 @@
+version: "3.5"
+services:
+  listener_process:
+    image: natsio/nats-box
+    networks: ["nats"]
+    depends_on: ["nats"]
+    command: "nats sub -s nats://nats:4222 processed.orders & nats sub -s nats://nats:4222 order_confirmation_email &"
+  listener_email:
+    image: natsio/nats-box
+    networks: ["nats"]
+    depends_on: ["nats"]
+    command: "nats sub -s nats://nats:4222 order_confirmation_email &"
+  orders:
+    build: ./orders-service
+    networks: ["nats"]
+    depends_on: ["listener_process"]
+  nats:
+    image: nats
+    ports:
+      - "8222:8222"
+    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 --http_port 8222 "
+    networks: ["nats"]
+  nats-1:
+    image: nats
+    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
+    networks: ["nats"]
+    depends_on: ["nats"]
+  nats-2:
+    image: nats
+    command: "--cluster_name NATS --cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
+    networks: ["nats"]
+    depends_on: ["nats"]
+
+networks:
+  nats:
+    name: nats
